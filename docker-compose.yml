@@ -1,0 +1,57 @@
+version: '2'
+services:
+    bd:
+        container_name: chat-bd
+        build:
+            context: .
+            dockerfile: Dockerfile-bd
+        volumes:
+            - ./build/servico:/var/www/html
+        image: gcr.io/ace-momentum-326621/chat-bd
+        environment:
+            POSTGRES_USER: chat
+            POSTGRES_PASSWORD: chat
+            POSTGRES_DB: chat
+        command: postgres -c config_file=/etc/postgresql/postgresql.conf
+        ports:
+            - "5434:5432"
+        restart: always
+    servico:
+        container_name: chat-servico
+        build:
+            context: .
+            dockerfile: Dockerfile-servico
+        volumes:
+            - "./codigo-fonte/servico:/var/www/html"
+            - "./build/servico/php.ini:/usr/local/etc/php/conf.d/php.ini"
+        image: gcr.io/ace-momentum-326621/chat-servico
+        environment:
+            VIRTUAL_HOST: localhost
+            LOCALHOST_UID: 1000
+            LOCALHOST_USERNAME: ${USER}
+            XDEBUG_CONFIG: remote_host=host.docker.internal #docker network ip.
+            PHP_IDE_CONFIG: "serverName=xdebug-docker" #phpstorm variavel de ambiente com o nome do server configurado.
+        ports:
+            - "80:80"
+            - "81:81"
+        restart: always
+        links:
+            - bd
+        depends_on:
+            - bd
+    cliente:
+        container_name: chat-cliente
+        build:
+            context: .
+            dockerfile: Dockerfile-cliente
+        volumes:
+            - ./codigo-fonte/cliente:/var/www/html
+        image: gcr.io/ace-momentum-326621/chat-cliente
+        ports:
+            - "8080:8080"
+        restart: always
+        depends_on:
+            - servico
+
+
+            
